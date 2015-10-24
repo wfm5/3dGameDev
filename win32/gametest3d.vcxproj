@@ -11,15 +11,33 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\body.c" />
+    <ClCompile Include="..\src\collisions.c" />
     <ClCompile Include="..\src\gametest3d.c" />
     <ClCompile Include="..\src\graphics3d.c" />
+    <ClCompile Include="..\src\model.c" />
+    <ClCompile Include="..\src\obj.c" />
     <ClCompile Include="..\src\shader.c" />
     <ClCompile Include="..\src\simple_logger.c" />
+    <ClCompile Include="..\src\sprite.c" />
+    <ClCompile Include="..\src\vector.c" />
+    <ClCompile Include="mgl_callback.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\graphics3d.h" />
+    <ClInclude Include="..\include\mgl_callback.h" />
+    <ClInclude Include="..\include\model.h" />
+    <ClInclude Include="..\include\obj.h" />
     <ClInclude Include="..\include\shader.h" />
     <ClInclude Include="..\include\simple_logger.h" />
+    <ClInclude Include="..\include\sprite.h" />
+    <ClInclude Include="..\include\vector.h" />
+    <ClInclude Include="body.h" />
+    <ClInclude Include="collisions.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\src\Makefile" />
+    <None Include="..\src\makefile.dep" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C8351047-707B-4D68-A801-6749E9509337}</ProjectGuid>
@@ -48,8 +66,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>C:\Libraries\glew-1.12.0\include;C:\Libraries\SDL2-2.0.3\include;C:\Users\Bo\Desktop\gametest3d\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Libraries\glew-1.12.0\lib\Release\Win32;C:\Libraries\SDL2-2.0.3\lib\x86;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Libraries\SDL2_image-2.0.0\include;C:\Libraries\glew-1.13.0\include;C:\Libraries\SDL2-2.0.3\include;C:\3dGameTest\gametest3d\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Libraries\SDL2_image-2.0.0\lib\x86;C:\Libraries\glew-1.13.0\lib\Release\Win32;C:\Libraries\SDL2-2.0.3\lib\x86;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)\..</OutDir>
     <IntDir>$(ProjectDir)\..</IntDir>
   </PropertyGroup>
@@ -61,7 +79,7 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>SDL2.lib;SDL2main.lib;opengl32.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;opengl32.lib;glew32.lib;glu32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

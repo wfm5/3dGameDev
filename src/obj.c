@@ -363,7 +363,9 @@ Obj *obj_load(char *filename)
 {
     FILE *file;
     Obj *objFile;
-    
+	Vec3D min ={0,0,0};
+	Vec3D max ={0,0,0};
+    int i;
     objFile = obj_get_by_filename(filename);
     if (objFile)
     {
@@ -395,6 +397,19 @@ Obj *obj_load(char *filename)
     obj_allocate(objFile);
     obj_file_parse(objFile, file);
     
+	for(i = 0;i< objFile->num_vertices;i++)
+	{
+		if(objFile->vertex_array[i*3+0] < min.x) min.x = objFile->vertex_array[i*3+0];
+		if(objFile->vertex_array[i*3+0] > min.x) min.x = objFile->vertex_array[i*3+0];
+		if(objFile->vertex_array[i*3+0] < min.y) min.y = objFile->vertex_array[i*3+0];
+		if(objFile->vertex_array[i*3+0] > min.y) min.y = objFile->vertex_array[i*3+0];
+		if(objFile->vertex_array[i*3+0] < min.z) min.z = objFile->vertex_array[i*3+0];
+		if(objFile->vertex_array[i*3+0] > min.z) min.z = objFile->vertex_array[i*3+0];
+	}
+	objFile->size.x = max.x - min.x;
+	objFile->size.y = max.y - min.y;
+	objFile->size.z = max.z - min.z;
+	slog("width: %d",objFile->size.x);
     fclose(file);
     
     return objFile;

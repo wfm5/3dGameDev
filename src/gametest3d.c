@@ -22,10 +22,12 @@
 #include "graphics3d.h"
 #include "shader.h"
 #include "obj.h"
-#include "vector.h"
 #include "sprite.h"
+#include "body.h"
+#include <math.h>
 
 void set_camera(Vec3D position, Vec3D rotation);
+void set_camera_toplayer(Vec3D player, Vec3D cameraPos);
 
 int main(int argc, char *argv[])
 {
@@ -33,10 +35,19 @@ int main(int argc, char *argv[])
     float r = 0;
     GLuint triangleBufferObject;
     char bGameLoopRunning = 1;
-    Vec3D cameraPosition = {0,-10,0.3};
+    Vec3D cameraPosition = {0,-10,15};
     Vec3D cameraRotation = {90,0,0};
-    SDL_Event e;
-    Obj *obj,*bgobj;
+	Vec3D boxPosition = {0,0,10};
+    Vec3D boxRotation = {0,0,0};
+	Vec3D stageSize = {40,10,10};
+	Vec3D stagePosition = {0,0,0};
+	Body mainBody;
+	Body powerBody1;
+	Body powerBody2;
+	Body powerBody3;
+	Body stageBody;
+	SDL_Event e;
+    Obj *obj,*bgobj, *obj2;
     Sprite *texture,*bgtext;
     const float triangleVertices[] = {
         0.0f, 0.5f, 0.0f, 1.0f,
@@ -67,12 +78,19 @@ int main(int argc, char *argv[])
     obj = obj_load("models/cube.obj");
     texture = LoadSprite("models/cube_text.png",1024,1024);
 
-    bgobj = obj_load("models/mountainvillage.obj");
+    bgobj = obj_load("models/cube.obj");//obj_load("models/mountainvillage.obj");
     bgtext = LoadSprite("models/mountain_text.png",1024,1024);
     
-//    obj = obj_load("models/mountainvillage.obj");
-    
-    
+	obj2 = obj_load("models/cube.obj");
+
+    set_body(&mainBody, boxPosition, obj, vec3d(1,1,1));
+    set_body(&powerBody1, vec3d(0,15,10), obj2, vec3d(1,1,1));
+	set_body(&powerBody2, vec3d(0,10,10), obj2, vec3d(1,1,1));
+	set_body(&powerBody3, vec3d(0,13,10), obj2, vec3d(1,1,1));
+	set_body(&stageBody, stagePosition, bgobj, stageSize);
+	//set_body_size(&stageBody, stageSize);
+	
+
     while (bGameLoopRunning)
     {
         while ( SDL_PollEvent(&e) ) 
@@ -90,13 +108,17 @@ int main(int argc, char *argv[])
                 else if (e.key.keysym.sym == SDLK_SPACE)
                 {
                     cameraPosition.z++;
+					//mainBody.position.z++;
+
                 }
                 else if (e.key.keysym.sym == SDLK_z)
                 {
                     cameraPosition.z--;
+					mainBody.position.z--;
                 }
                 else if (e.key.keysym.sym == SDLK_w)
                 {
+					//camera should move to a place reletive to mainBody
                     vec3d_add(
                         cameraPosition,
                         cameraPosition,
@@ -105,6 +127,8 @@ int main(int argc, char *argv[])
                             cos(cameraRotation.z * DEGTORAD),
                             0
                         ));
+					//move box as well
+					mainBody.position.y++;
                 }
                 else if (e.key.keysym.sym == SDLK_s)
                 {
@@ -116,6 +140,7 @@ int main(int argc, char *argv[])
                             -cos(cameraRotation.z * DEGTORAD),
                             0
                         ));
+					mainBody.position.y--;
                 }
                 else if (e.key.keysym.sym == SDLK_d)
                 {
@@ -127,6 +152,7 @@ int main(int argc, char *argv[])
                             sin(cameraRotation.z * DEGTORAD),
                             0
                         ));
+					mainBody.position.x++;
                 }
                 else if (e.key.keysym.sym == SDLK_a)
                 {
@@ -138,6 +164,7 @@ int main(int argc, char *argv[])
                             -sin(cameraRotation.z * DEGTORAD),
                             0
                         ));
+					mainBody.position.x--;
                 }
                 else if (e.key.keysym.sym == SDLK_LEFT)
                 {
@@ -157,28 +184,82 @@ int main(int argc, char *argv[])
                 }
             }
         }
-
+		//i plan to use cube cube intersection once i fix it to stop colliding everywhere
+		if(point_cube_intersection(mainBody.position,powerBody1.position,vec3d(1,1,1))) //power up 1
+		{
+			slog("you now have some power");
+			
+		}
+		if(point_cube_intersection(mainBody.position,powerBody2.position,vec3d(1,1,1))) //power up 2
+		{
+			slog("you now have some other power");
+			
+		}
+		if(point_cube_intersection(mainBody.position,powerBody3.position,vec3d(1,1,1))) //power up 3
+		{
+			slog("you now have some mystical power");
+			
+		}
+		if(point_cube_intersection(mainBody.position,stageBody.position,stageSize)) //get out the stage please
+		{
+			slog("you are in the ground");
+			mainBody._airborne = 0;
+			if(!mainBody._needsBackoff)
+				mainBody._needsBackoff = 1;
+			mainBody._stepOffVector = vec3d(0,0,0.3);
+			body_process(&mainBody);
+			body_reset(&mainBody);
+		}else{
+			mainBody._airborne = 1;
+			slog("you are in the air");
+		}
         graphics3d_frame_begin();
-        
+		if(mainBody._airborne)
+			mainBody.position.z -= 0.02;
+        //begin drawing
         glPushMatrix();
         set_camera(
             cameraPosition,
             cameraRotation);
-        
-  
-        obj_draw(
+	//	set_camera_toplayer(mainBody.position, cameraPosition);
+		
+        obj_draw(          //stage ground
             bgobj,
-            vec3d(0,0,2),
+            stagePosition,
             vec3d(90,90,0),
-            vec3d(5,5,5),
+            stageSize, //scale
             vec4d(1,1,1,1),
             bgtext
         );
         
-        obj_draw(
+        obj_draw(          //player draw
             obj,
-            vec3d(0,0,0),
+			mainBody.position,
+            boxRotation,
+            vec3d(0.5,0.5,0.5),
+            vec4d(1,1,1,1),
+            texture
+        );
+		obj_draw(          //powerup1 draw
+            obj2,
+			powerBody1.position,
             vec3d(90,r++,0),
+            vec3d(0.5,0.5,0.5),
+            vec4d(1,1,1,1),
+            texture
+        );
+		obj_draw(          //powerup2 draw
+            obj2,
+			powerBody2.position,
+            vec3d(90,r--,0),
+            vec3d(0.5,0.5,0.5),
+            vec4d(1,1,1,1),
+            texture
+        );
+		obj_draw(          //powerup3 draw
+            obj2,
+			powerBody3.position,
+            vec3d(90,0,r++),
             vec3d(0.5,0.5,0.5),
             vec4d(1,1,1,1),
             texture
@@ -199,6 +280,15 @@ void set_camera(Vec3D position, Vec3D rotation)
     glTranslatef(-position.x,
                  -position.y,
                  -position.z);
+}
+
+void set_camera_toplayer(Vec3D player, Vec3D cameraPos) //set camera to this position{0,-10,2} relative to the boxposition
+{
+	vec3d_add(
+		cameraPos,
+		player,
+		vec3d(0,-10,2)
+		);
 }
 
 /*eol@eof*/
