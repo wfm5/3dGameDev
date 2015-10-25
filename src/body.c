@@ -31,6 +31,7 @@ void set_body(Body *target, Vec3D pos, Obj *targetObj, Vec3D scale)
 	target->bounds.d = targetObj->size.z*scale.z;
 	
 	target->_needsBackoff = 0;
+	target->used = 1;
 	target->_airborne = 1;
 }
 void set_body_size(Body *target, Vec3D size)

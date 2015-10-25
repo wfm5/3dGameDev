@@ -1,4 +1,5 @@
 #include "collisions.h"
+#include "simple_logger.h"
 #include <math.h>
 
 int sphere_sphere_intersection(
@@ -17,18 +18,22 @@ int sphere_sphere_intersection(
     }
     return 0;
 }
-
+//fix this
 int cube_cube_intersection(
-    Cube a,
-    Cube b)
+    Cube a,//1
+    Cube b)//2
 {
-    if ((a.x > b.x + b.w) || (b.x > a.x + a.w) ||
-        (a.y > b.y + b.h) || (b.y > a.y + a.h) ||
-        (a.z > b.z + b.d) || (b.z > a.z + a.d))
+    if ( 
+	(( (a.x-(a.w/2))  <= (b.x-(b.w/2)) && (b.x-(b.w/2)) <= (a.x+(a.w/2)) || ((b.x-(b.w/2)) <= (a.x-(a.w/2)) && (a.x-(a.w/2)) <= (a.x+(a.w/2))))) &&
+    (( (a.y-(a.h/2))  <= (b.y-(b.h/2)) && (b.y-(b.y/2)) <= (a.y+(a.d/2)) || ((b.y-(b.h/2)) <= (a.y-(a.h/2)) && (a.y-(a.h/2)) <= (a.y+(a.h/2))))) &&
+    (( (a.z-(a.d/2))  <= (b.z-(b.d/2)) && (b.z-(b.d/2)) <= (a.z+(a.h/2)) || ((b.z-(b.d/2)) <= (a.z-(a.d/2)) && (a.z-(a.d/2)) <= (a.z+(a.d/2))))) 
+    	)
     {
-        return 0;
+		slog("true eh");
+        return 1;
     }
-    return 1;
+	
+    return 0;
 }
 
 int point_cube_intersection(

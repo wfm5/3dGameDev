@@ -24,6 +24,7 @@
 #include "obj.h"
 #include "sprite.h"
 #include "body.h"
+#include "vector.h"
 #include <math.h>
 
 void set_camera(Vec3D position, Vec3D rotation);
@@ -36,7 +37,7 @@ int main(int argc, char *argv[])
     GLuint triangleBufferObject;
     char bGameLoopRunning = 1;
     Vec3D cameraPosition = {0,-10,15};
-    Vec3D cameraRotation = {90,0,0};
+    Vec3D cameraRotation = {73,0,0};
 	Vec3D boxPosition = {0,0,10};
     Vec3D boxRotation = {0,0,0};
 	Vec3D stageSize = {40,10,10};
@@ -84,9 +85,9 @@ int main(int argc, char *argv[])
 	obj2 = obj_load("models/cube.obj");
 
     set_body(&mainBody, boxPosition, obj, vec3d(1,1,1));
-    set_body(&powerBody1, vec3d(0,15,10), obj2, vec3d(1,1,1));
-	set_body(&powerBody2, vec3d(0,10,10), obj2, vec3d(1,1,1));
-	set_body(&powerBody3, vec3d(0,13,10), obj2, vec3d(1,1,1));
+    set_body(&powerBody1, vec3d(15,0,10), obj2, vec3d(1,1,1));
+	set_body(&powerBody2, vec3d(10,0,10), obj2, vec3d(1,1,1));
+	set_body(&powerBody3, vec3d(5,0,10), obj2, vec3d(1,1,1));
 	set_body(&stageBody, stagePosition, bgobj, stageSize);
 	//set_body_size(&stageBody, stageSize);
 	
@@ -188,35 +189,45 @@ int main(int argc, char *argv[])
 		if(point_cube_intersection(mainBody.position,powerBody1.position,vec3d(1,1,1))) //power up 1
 		{
 			slog("you now have some power");
-			
+			powerBody1.used = 0;
 		}
+//		if(cube_cube_intersection(mainBody.bounds,powerBody1.bounds)) //power up 1
+	//	{
+		//	slog("you now have some powerAYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYE");
+			
+	//	}
 		if(point_cube_intersection(mainBody.position,powerBody2.position,vec3d(1,1,1))) //power up 2
 		{
 			slog("you now have some other power");
-			
+			powerBody2.used = 0;
+
 		}
 		if(point_cube_intersection(mainBody.position,powerBody3.position,vec3d(1,1,1))) //power up 3
 		{
 			slog("you now have some mystical power");
-			
+			powerBody3.used = 0;
 		}
 		if(point_cube_intersection(mainBody.position,stageBody.position,stageSize)) //get out the stage please
 		{
-			slog("you are in the ground");
+			//slog("you are in the ground");
 			mainBody._airborne = 0;
 			if(!mainBody._needsBackoff)
 				mainBody._needsBackoff = 1;
-			mainBody._stepOffVector = vec3d(0,0,0.3);
+			mainBody._stepOffVector = vec3d(0,0,0.02); //DifferenceVector(mainBody.position,stageBody.position);
 			body_process(&mainBody);
 			body_reset(&mainBody);
 		}else{
 			mainBody._airborne = 1;
-			slog("you are in the air");
+			//slog("you are in the air");
+		}
+		if(mainBody._airborne)
+		{	
+			mainBody.position.z -= 0.02;
 		}
         graphics3d_frame_begin();
-		if(mainBody._airborne)
-			mainBody.position.z -= 0.02;
-        //begin drawing
+
+
+		//begin drawing
         glPushMatrix();
         set_camera(
             cameraPosition,
@@ -240,30 +251,37 @@ int main(int argc, char *argv[])
             vec4d(1,1,1,1),
             texture
         );
-		obj_draw(          //powerup1 draw
-            obj2,
-			powerBody1.position,
-            vec3d(90,r++,0),
-            vec3d(0.5,0.5,0.5),
-            vec4d(1,1,1,1),
-            texture
-        );
-		obj_draw(          //powerup2 draw
-            obj2,
-			powerBody2.position,
-            vec3d(90,r--,0),
-            vec3d(0.5,0.5,0.5),
-            vec4d(1,1,1,1),
-            texture
-        );
-		obj_draw(          //powerup3 draw
-            obj2,
-			powerBody3.position,
-            vec3d(90,0,r++),
-            vec3d(0.5,0.5,0.5),
-            vec4d(1,1,1,1),
-            texture
-        );
+		if(powerBody1.used){
+			obj_draw(          //powerup1 draw
+			    obj2,
+				powerBody1.position,
+			    vec3d(90,r++,0),
+			    vec3d(0.5,0.5,0.5),
+			    vec4d(1,1,1,1),
+			    texture
+			);
+		}
+		if(powerBody2.used)
+		{
+			obj_draw(          //powerup2 draw
+			    obj2,
+				powerBody2.position,
+			    vec3d(90,r--,0),
+			    vec3d(0.5,0.5,0.5),
+			    vec4d(1,1,1,1),
+			    texture
+			);
+		}
+		if(powerBody3.used){
+			obj_draw(          //powerup3 draw
+			    obj2,
+				powerBody3.position,
+			    vec3d(90,0,r++),
+			    vec3d(0.5,0.5,0.5),
+			    vec4d(1,1,1,1),
+			    texture
+			);
+		}
         if (r > 360)r -= 360;
         glPopMatrix();
         /* drawing code above here! */

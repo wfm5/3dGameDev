@@ -10,11 +10,15 @@ typedef struct
     Vec3D position;
     Vec3D velocity;
     Cube bounds;
+	int used;
     MglCallback touch;
     int  _needsBackoff;
     int  _done;
     Vec3D _stepOffVector;
 	int _airborne;
+	int velx;
+	int vely;
+	int velz;
 }Body;
 
 /**

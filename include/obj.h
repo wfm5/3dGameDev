@@ -96,4 +96,5 @@ void obj_draw(
 
 void obj_translate(Obj *o);
 
+void obj_free(Obj *obj);
 #endif
