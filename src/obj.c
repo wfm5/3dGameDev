@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "obj.h"
 #include "simple_logger.h"
+#include "entity.h"
 
 #define __obj_max 1024
 
@@ -399,17 +400,17 @@ Obj *obj_load(char *filename)
     
 	for(i = 0;i< objFile->num_vertices;i++)
 	{
-		if(objFile->vertex_array[i%3==0] <= min.x) min.x = objFile->vertex_array[i%3];
-		if(objFile->vertex_array[i%3==0] >= max.x) max.x = objFile->vertex_array[i%3];
-		if(objFile->vertex_array[i%2==0] <= min.y) min.y = objFile->vertex_array[i%2];
-		if(objFile->vertex_array[i%2==0] >= max.y) max.y = objFile->vertex_array[i%2];
-		if(objFile->vertex_array[i%1==0] <= min.z) min.z = objFile->vertex_array[i%1];
-		if(objFile->vertex_array[i%1==0] >= max.z) max.z = objFile->vertex_array[i%1];
+		if(objFile->vertex_array[i*3] <= min.x) min.x = objFile->vertex_array[i*3];
+		if(objFile->vertex_array[i*3] >= max.x) max.x = objFile->vertex_array[i*3];
+		if(objFile->vertex_array[i*3+1] <= min.y) min.y = objFile->vertex_array[i*3+1];
+		if(objFile->vertex_array[i*3+1] >= max.y) max.y = objFile->vertex_array[i*3+1];
+		if(objFile->vertex_array[i*3+2] <= min.z) min.z = objFile->vertex_array[i*3+2];
+		if(objFile->vertex_array[i*3+2] >= max.z) max.z = objFile->vertex_array[i*3+2];
 	}
 	objFile->size.x = max.x - min.x;
 	objFile->size.y = max.y - min.y;
 	objFile->size.z = max.z - min.z;
-
+	slog("width: %d", objFile->size.x);
     fclose(file);
     
     return objFile;

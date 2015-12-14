@@ -7,18 +7,16 @@
 
 typedef struct
 {
+	int _airborne;
     Vec3D position;
     Vec3D velocity;
+	Vec3D rotation;
     Cube bounds;
-	int used;
+	Obj *obj;
     MglCallback touch;
     int  _needsBackoff;
     int  _done;
     Vec3D _stepOffVector;
-	int _airborne;
-	int velx;
-	int vely;
-	int velz;
 }Body;
 
 /**
@@ -33,11 +31,5 @@ void body_reset(Body *body);
  */
 void body_process(Body *body);
 
-/**
-*@brief setting up bounding boxes
-*@params a target body, 1 Vec3d to set point, 1 object to attach body to
-*/
-void set_body(Body *target, Vec3D pos, Obj *targetObj, Vec3D scale);
-void set_body_size(Body *target, Vec3D size);
-
+void set_body(Body *player, Vec3D position, Obj *obj, Vec3D rotation, Vec3D scale);
 #endif

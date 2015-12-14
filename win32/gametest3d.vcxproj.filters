@@ -48,6 +48,9 @@
     <ClCompile Include="mgl_callback.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="entity.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\graphics3d.h">
@@ -78,6 +81,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\mgl_callback.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\entity.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

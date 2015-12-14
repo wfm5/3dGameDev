@@ -52,20 +52,21 @@ Sprite *LoadSprite(char *filename,int fw, int fh)
     Sprite *sprite;
     SDL_Surface *image;
     int Mode = GL_RGB;
-    
+
     sprite = SpriteGetByFilename(filename);
     if (sprite)return sprite;
     
     sprite = SpriteNew();
     if (!sprite)return NULL;
-    
+
     image = IMG_Load(filename);
     if (!image)
     {
         slog("failed to load sprite image file: %s, re: %s",filename, SDL_GetError());
         return NULL;
     }
-    sprite->image = image;
+	sprintf(sprite->filename, "%s", filename);
+	sprite->image = image;
     if (fw == -1)
     {
         sprite->w = sprite->image->w;

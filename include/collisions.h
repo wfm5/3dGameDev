@@ -15,6 +15,7 @@ typedef struct
 int cube_cube_intersection(
     Cube a,
     Cube b);
+
 int point_cube_intersection(
     Vec3D point,            /*point*/
     Vec3D box, Vec3D size);  /*cube*/

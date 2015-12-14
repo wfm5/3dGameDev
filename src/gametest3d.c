@@ -18,6 +18,7 @@
  *    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *    SOFTWARE.
  */
+#include "mgl_callback.h"
 #include "simple_logger.h"
 #include "graphics3d.h"
 #include "shader.h"
@@ -25,28 +26,116 @@
 #include "sprite.h"
 #include "body.h"
 #include "vector.h"
+#include "entity.h"
 #include <math.h>
+#include <stdio.h>
 
 void set_camera(Vec3D position, Vec3D rotation);
 void set_camera_toplayer(Vec3D player, Vec3D cameraPos);
+void update_BB(Body *body);
+
+void update_BB(Body *body)
+{
+	body->bounds.x = body->position.x;
+	body->bounds.y = body->position.y;
+	body->bounds.z = body->position.z;
+}
+
+void touch_callback(void *data, void *context)
+{
+    Entity *me,*other;
+    Body *obody;
+    if ((!data)||(!context))return;
+    me = (Entity *)data;
+    obody = (Body *)context;
+    if (entity_is_entity(obody->touch.data))
+    {
+        other = (Entity *)obody->touch.data;
+        slog("%s is ",other->name);
+    }
+    slog("touching me.... touching youuuuuuuu");
+}
+
+void think(Entity *self)
+{
+    if (!self)return;
+    switch(self->state)
+    {
+        case 0:
+            self->frame = 0;
+            break;
+        case 1:
+            self->frame += 0.3;
+            if (self->frame >= 24)self->frame = 0;
+            break;
+        case 2:
+            self->frame -= 0.3;
+            if (self->frame < 0)self->frame = 23;
+            break;
+    }
+    self->objModel = self->objAnimation[(int)self->frame];
+}
+
+Entity *newCube(Vec3D position, char *name)
+{
+    Entity * ent;
+    char buffer[255];
+   int i;
+    ent = entity_new();
+    if (!ent)
+    {
+        return NULL;
+    }
+    //for (i = 0; i < 24;i++)
+   // {
+        sprintf(buffer,"models/cube.obj");
+        ent->objAnimation[0] = obj_load(buffer);
+   // }
+    ent->objModel = ent->objAnimation[0];
+    ent->texture = LoadSprite("models/white.png",1024,1024);
+    vec3d_cpy(ent->body.position,position);
+	ent->scale = vec3d(1,1,1);
+	ent->color = vec4d(1,1,1,1);
+    cube_set(ent->body.bounds,-1,-1,-1,2,2,2);
+    ent->rotation.x = 0;
+    sprintf(ent->name,"%s",name);
+    ent->think = think;
+    ent->state = 0;
+    mgl_callback_set(&ent->body.touch,touch_callback,ent);
+    return ent;
+}
 
 int main(int argc, char *argv[])
 {
     GLuint vao;
     float r = 0;
+	int i;
     GLuint triangleBufferObject;
     char bGameLoopRunning = 1;
     Vec3D cameraPosition = {0,-10,15};
     Vec3D cameraRotation = {73,0,0};
-	Vec3D boxPosition = {0,0,10};
+	Vec3D boxPosition = {0,3,10};
+	
+	Vec3D pupPosition1 = {0,0,10};
+	Vec3D pupPosition2 = {0,10,10};
+	Vec3D pupPosition3 = {0,15,10};
+
     Vec3D boxRotation = {0,0,0};
-	Vec3D stageSize = {40,10,10};
+	Vec3D stageSize = {10,40,10};
 	Vec3D stagePosition = {0,0,0};
+	const Uint8 *state = SDL_GetKeyboardState(NULL);
+	int diag;
+	unsigned int now;
+	unsigned int last;
+	unsigned int time;
+	float deltaTime;
+
 	Body mainBody;
 	Body powerBody1;
 	Body powerBody2;
 	Body powerBody3;
 	Body stageBody;
+
 	SDL_Event e;
     Obj *obj,*bgobj, *obj2;
     Sprite *texture,*bgtext;
@@ -65,9 +154,11 @@ int main(int argc, char *argv[])
     {
         return -1;
     }
+	InitSpriteList();
     model_init();
     obj_init();
-    
+    entity_init(255);
+
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao); //make our vertex array object, we need it to restore state we set after binding it. Re-binding reloads the state associated with it.
     
@@ -79,48 +170,55 @@ int main(int argc, char *argv[])
     obj = obj_load("models/cube.obj");
     texture = LoadSprite("models/cube_text.png",1024,1024);
 
-    bgobj = obj_load("models/cube.obj");//obj_load("models/mountainvillage.obj");
+    bgobj = obj_load("models/cube.obj"); //obj_load("models/mountainvillage.obj");
     bgtext = LoadSprite("models/mountain_text.png",1024,1024);
     
 	obj2 = obj_load("models/cube.obj");
-
-    set_body(&mainBody, boxPosition, obj, vec3d(1,1,1));
-    set_body(&powerBody1, vec3d(15,0,10), obj2, vec3d(1,1,1));
-	set_body(&powerBody2, vec3d(10,0,10), obj2, vec3d(1,1,1));
-	set_body(&powerBody3, vec3d(5,0,10), obj2, vec3d(1,1,1));
-	set_body(&stageBody, stagePosition, bgobj, stageSize);
-	//set_body_size(&stageBody, stageSize);
 	
+	set_body(&mainBody, boxPosition, obj, boxRotation, vec3d(0.5,0.5,0.5));
+	set_body(&stageBody,stagePosition,bgobj,boxRotation, vec3d(0.5,0.5,0.5));
+	set_body(&powerBody1,pupPosition1, obj2, boxRotation, vec3d(0.5,0.5,0.5));
+	set_body(&powerBody2,pupPosition2, obj2, boxRotation, vec3d(0.5,0.5,0.5));
+	set_body(&powerBody3,pupPosition3, obj2, boxRotation, vec3d(0.5,0.5,0.5));
+	
+	diag = 0;
+	now = 0;
+	last = 0;
+	time = 0;
+
 
     while (bGameLoopRunning)
     {
-        while ( SDL_PollEvent(&e) ) 
-        {
-            if (e.type == SDL_QUIT)
+		//entity_think_all();
+
+		update_BB(&mainBody);
+		update_BB(&stageBody);
+		update_BB(&powerBody1);
+		update_BB(&powerBody2);
+		update_BB(&powerBody3);
+		
+		now = SDL_GetTicks();
+		time = now/1000;
+		if(now>last+1000)
+		{
+			deltaTime = ((float)(now-last)/1000);
+			last = now;
+			//slog("%d",time);
+		}
+
+        diag = 0;
+		
+		while ( SDL_PollEvent(&e) ) 
+		{
+			if (state[SDL_SCANCODE_ESCAPE])
             {
                 bGameLoopRunning = 0;
             }
-            else if (e.type == SDL_KEYDOWN)
-            {
-                if (e.key.keysym.sym == SDLK_ESCAPE)
-                {
-                    bGameLoopRunning = 0;
-                }
-                else if (e.key.keysym.sym == SDLK_SPACE)
-                {
-                    cameraPosition.z++;
-					//mainBody.position.z++;
 
-                }
-                else if (e.key.keysym.sym == SDLK_z)
-                {
-                    cameraPosition.z--;
-					mainBody.position.z--;
-                }
-                else if (e.key.keysym.sym == SDLK_w)
-                {
-					//camera should move to a place reletive to mainBody
-                    vec3d_add(
+			if(state[SDL_SCANCODE_W])
+			{
+				SET_FLAG(diag,MOVE_FORWARD);
+				vec3d_add(
                         cameraPosition,
                         cameraPosition,
                         vec3d(
@@ -128,12 +226,11 @@ int main(int argc, char *argv[])
                             cos(cameraRotation.z * DEGTORAD),
                             0
                         ));
-					//move box as well
-					mainBody.position.y++;
-                }
-                else if (e.key.keysym.sym == SDLK_s)
-                {
-                    vec3d_add(
+			}
+			if(state[SDL_SCANCODE_S])
+			{
+				SET_FLAG(diag,MOVE_BACKWARDS);
+				vec3d_add(
                         cameraPosition,
                         cameraPosition,
                         vec3d(
@@ -141,23 +238,18 @@ int main(int argc, char *argv[])
                             -cos(cameraRotation.z * DEGTORAD),
                             0
                         ));
-					mainBody.position.y--;
-                }
-                else if (e.key.keysym.sym == SDLK_d)
-                {
-                    vec3d_add(
+			}
+			if(state[SDL_SCANCODE_A])
+			{
+				/*vec3d_add(
                         cameraPosition,
                         cameraPosition,
                         vec3d(
-                            cos(cameraRotation.z * DEGTORAD),
-                            sin(cameraRotation.z * DEGTORAD),
+                            -cos(cameraRotation.z * DEGTORAD),
+                            -sin(cameraRotation.z * DEGTORAD),
                             0
-                        ));
-					mainBody.position.x++;
-                }
-                else if (e.key.keysym.sym == SDLK_a)
-                {
-                    vec3d_add(
+                      ));*/
+				vec3d_add(
                         cameraPosition,
                         cameraPosition,
                         vec3d(
@@ -165,123 +257,256 @@ int main(int argc, char *argv[])
                             -sin(cameraRotation.z * DEGTORAD),
                             0
                         ));
-					mainBody.position.x--;
-                }
-                else if (e.key.keysym.sym == SDLK_LEFT)
-                {
-                    cameraRotation.z += 1;
-                }
-                else if (e.key.keysym.sym == SDLK_RIGHT)
-                {
-                    cameraRotation.z -= 1;
-                }
-                else if (e.key.keysym.sym == SDLK_UP)
-                {
-                    cameraRotation.x += 1;
-                }
-                else if (e.key.keysym.sym == SDLK_DOWN)
-                {
-                    cameraRotation.x -= 1;
-                }
-            }
-        }
-		//i plan to use cube cube intersection once i fix it to stop colliding everywhere
-		if(point_cube_intersection(mainBody.position,powerBody1.position,vec3d(1,1,1))) //power up 1
-		{
-			slog("you now have some power");
-			powerBody1.used = 0;
-		}
-//		if(cube_cube_intersection(mainBody.bounds,powerBody1.bounds)) //power up 1
-	//	{
-		//	slog("you now have some powerAYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYE");
-			
-	//	}
-		if(point_cube_intersection(mainBody.position,powerBody2.position,vec3d(1,1,1))) //power up 2
-		{
-			slog("you now have some other power");
-			powerBody2.used = 0;
+				SET_FLAG(diag,MOVE_LEFT);
+			}
+			if(state[SDL_SCANCODE_D])
+			{
+				vec3d_add(
+                        cameraPosition,
+                        cameraPosition,
+                        vec3d(
+                            cos(cameraRotation.z * DEGTORAD),
+                            sin(cameraRotation.z * DEGTORAD),
+                            0
+                        ));
+				SET_FLAG(diag,MOVE_RIGHT);
+			}
+			if(state[SDL_SCANCODE_SPACE])
+			{
+				SET_FLAG(diag,MOVE_JUMP);
+				cameraPosition.z++;
+			}
+			if(state[SDL_SCANCODE_RIGHT])
+			{
+				mainBody.rotation.z -= 3;
+				//cameraRotation.z -= 1;
+			}
+			if(state[SDL_SCANCODE_LEFT])
+			{
+				mainBody.rotation.z += 3;
+				//cameraRotation.z += 1;
+			}
+			if(state[SDL_SCANCODE_UP])
+			{
+				cameraRotation.x += 1;
+			}
+			if(state[SDL_SCANCODE_DOWN])
+			{
+				 cameraRotation.x -= 1;
+			}
+			if(state[SDL_SCANCODE_Z])
+			{
+				mainBody.position.z--;
+				//cameraPosition.z--;
+			}
 
-		}
-		if(point_cube_intersection(mainBody.position,powerBody3.position,vec3d(1,1,1))) //power up 3
-		{
-			slog("you now have some mystical power");
-			powerBody3.used = 0;
-		}
-		if(point_cube_intersection(mainBody.position,stageBody.position,stageSize)) //get out the stage please
-		{
-			//slog("you are in the ground");
-			mainBody._airborne = 0;
-			if(!mainBody._needsBackoff)
-				mainBody._needsBackoff = 1;
-			mainBody._stepOffVector = vec3d(0,0,0.02); //DifferenceVector(mainBody.position,stageBody.position);
-			body_process(&mainBody);
-			body_reset(&mainBody);
-		}else{
-			mainBody._airborne = 1;
-			//slog("you are in the air");
+			if(diag==MOVE_FORWARD)
+				{
+					vec3d_add(
+                        mainBody.position,
+                        mainBody.position,
+                        vec3d(
+                            0,
+							mainBody.velocity.y,
+                            0
+                        ));
+				}
+			else if(diag==(MOVE_FORWARD | MOVE_RIGHT))
+				{
+					vec3d_add(
+                        mainBody.position,
+                        mainBody.position,
+                        vec3d(
+							mainBody.velocity.x,
+							mainBody.velocity.y,
+                            0
+                        ));
+				}
+			else if(diag==(MOVE_RIGHT))
+				{
+					vec3d_add(
+						mainBody.position,
+                        mainBody.position,
+                        vec3d(
+                            mainBody.velocity.x,
+							0,
+                            0
+                        ));
+				}
+			else if(diag==(MOVE_RIGHT | MOVE_BACKWARDS))
+				{
+					vec3d_add(
+						mainBody.position,
+                        mainBody.position,
+                        vec3d(
+                            mainBody.velocity.x,
+							0,
+                            0
+                        ));
+					vec3d_sub(
+						mainBody.position,
+                        mainBody.position,
+                        vec3d(
+                            0,
+							mainBody.velocity.y,
+                            0
+                        ));	
+			}
+			else if(diag==(MOVE_BACKWARDS))
+				{
+					vec3d_sub(
+						mainBody.position,
+                        mainBody.position,
+                        vec3d(
+                            0,
+							mainBody.velocity.y,
+                            0
+                        ));
+				}
+			else if(diag==(MOVE_LEFT))
+				{
+					vec3d_sub(
+						mainBody.position,
+                        mainBody.position,
+                        vec3d(
+                            mainBody.velocity.x,
+							0,
+                            0
+                        ));
+				}
+			else if(diag==(MOVE_LEFT | MOVE_FORWARD))
+				{
+					vec3d_sub(
+						mainBody.position,
+                        mainBody.position,
+                        vec3d(
+                            mainBody.velocity.x,
+							0,
+                            0
+                        ));
+					vec3d_add(
+						mainBody.position,
+                        mainBody.position,
+                        vec3d(
+                            0,
+							mainBody.velocity.y,
+                            0
+                        ));
+				}
+			else if(diag==(MOVE_LEFT | MOVE_BACKWARDS))
+				{
+					vec3d_sub(
+						mainBody.position,
+                        mainBody.position,
+                        vec3d(
+                            mainBody.velocity.x,
+							mainBody.velocity.y,
+                            0
+                        ));
+				}
+			else if(diag==(MOVE_JUMP))
+			{
+				mainBody._airborne = 1;
+			}
 		}
 		if(mainBody._airborne)
-		{	
-			mainBody.position.z -= 0.02;
+		{
+			for(i=0;i<4;i++)
+			{
+				vec3d_add(
+					mainBody.position,
+					mainBody.position,
+					vec3d(
+						0,
+						0,
+						mainBody.velocity.z*deltaTime
+					));
+				if(i == 3)
+				{
+					mainBody._airborne = 0;
+				}
+			}
+		}else
+		{
+			/*vec3d_sub(
+					mainBody.position,
+					mainBody.position,
+					vec3d(
+						0,
+						0,
+						mainBody.velocity.z
+					));*/
 		}
+		if(cube_cube_intersection(mainBody.bounds,stageBody.bounds))
+		{
+			mainBody._needsBackoff = 1;
+			//body_process(&mainBody);
+			//slog("in");	
+		}
+		//if(cube_cube_intersection(mainBody.bounds,powerBody1.bounds))
+		//{
+		//	//body_process(&mainBody);
+		//}
+		/*if(point_cube_intersection(mainBody.position,powerBody1.position,powerBody1.obj->size))
+		{
+			slog("caughht \n");
+		}*/
         graphics3d_frame_begin();
 
-
-		//begin drawing
-        glPushMatrix();
+	   //begin drawing
+       // entity_draw_all();
+		glPushMatrix();
+	
         set_camera(
             cameraPosition,
             cameraRotation);
-	//	set_camera_toplayer(mainBody.position, cameraPosition);
+	
 		
-        obj_draw(          //stage ground
-            bgobj,
-            stagePosition,
-            vec3d(90,90,0),
-            stageSize, //scale
-            vec4d(1,1,1,1),
-            bgtext
-        );
-        
+        //obj_draw(          //stage ground
+        //    bgobj,
+        //    stagePosition,
+        //    vec3d(0,90,0),
+        //    stageSize, //scale
+        //    vec4d(1,1,1,1),
+        //    bgtext
+        //);
+        drawBB(&mainBody);
+		//drawBB(&powerBody1);
         obj_draw(          //player draw
             obj,
 			mainBody.position,
-            boxRotation,
-            vec3d(0.5,0.5,0.5),
+			mainBody.rotation,
+			vec3d(1,1,1),
             vec4d(1,1,1,1),
             texture
         );
-		if(powerBody1.used){
+	
 			obj_draw(          //powerup1 draw
 			    obj2,
-				powerBody1.position,
+				pupPosition1,
 			    vec3d(90,r++,0),
-			    vec3d(0.5,0.5,0.5),
+				vec3d(1,1,1),
 			    vec4d(1,1,1,1),
 			    texture
 			);
-		}
-		if(powerBody2.used)
-		{
 			obj_draw(          //powerup2 draw
 			    obj2,
-				powerBody2.position,
-			    vec3d(90,r--,0),
-			    vec3d(0.5,0.5,0.5),
+				pupPosition2,
+			    vec3d(r++,0,0),
+				vec3d(1,1,1),
 			    vec4d(1,1,1,1),
 			    texture
 			);
-		}
-		if(powerBody3.used){
+		
 			obj_draw(          //powerup3 draw
 			    obj2,
-				powerBody3.position,
+				pupPosition3,
 			    vec3d(90,0,r++),
-			    vec3d(0.5,0.5,0.5),
+				vec3d(1,1,1),
 			    vec4d(1,1,1,1),
 			    texture
 			);
-		}
+		
         if (r > 360)r -= 360;
         glPopMatrix();
         /* drawing code above here! */
@@ -298,15 +523,6 @@ void set_camera(Vec3D position, Vec3D rotation)
     glTranslatef(-position.x,
                  -position.y,
                  -position.z);
-}
-
-void set_camera_toplayer(Vec3D player, Vec3D cameraPos) //set camera to this position{0,-10,2} relative to the boxposition
-{
-	vec3d_add(
-		cameraPos,
-		player,
-		vec3d(0,-10,2)
-		);
 }
 
 /*eol@eof*/

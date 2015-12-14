@@ -18,18 +18,29 @@ int sphere_sphere_intersection(
     }
     return 0;
 }
+int cube_cube_intersection2(
+    Cube a,
+    Cube b)
+{
+    if ((a.x > b.x + b.w) || (b.x > a.x + a.w) ||
+        (a.y > b.y + b.h) || (b.y > a.y + a.h) ||
+        (a.z > b.z + b.d) || (b.z > a.z + a.d))
+    {
+        return 0;
+    }
+    return 1;
+}
 //fix this
 int cube_cube_intersection(
     Cube a,//1
     Cube b)//2
 {
     if ( 
-	(( (a.x-(a.w/2))  <= (b.x-(b.w/2)) && (b.x-(b.w/2)) <= (a.x+(a.w/2)) || ((b.x-(b.w/2)) <= (a.x-(a.w/2)) && (a.x-(a.w/2)) <= (a.x+(a.w/2))))) &&
-    (( (a.y-(a.h/2))  <= (b.y-(b.h/2)) && (b.y-(b.y/2)) <= (a.y+(a.d/2)) || ((b.y-(b.h/2)) <= (a.y-(a.h/2)) && (a.y-(a.h/2)) <= (a.y+(a.h/2))))) &&
-    (( (a.z-(a.d/2))  <= (b.z-(b.d/2)) && (b.z-(b.d/2)) <= (a.z+(a.h/2)) || ((b.z-(b.d/2)) <= (a.z-(a.d/2)) && (a.z-(a.d/2)) <= (a.z+(a.d/2))))) 
+	(( (a.x-(a.w))  <= (b.x-(b.w)) && (b.x-(b.w)) <= (a.x+(a.w)) || ((b.x-(b.w)) <= (a.x-(a.w)) && (a.x-(a.w)) <= (a.x+(a.w))))) &&
+    (( (a.y-(a.h))  <= (b.y-(b.h)) && (b.y-(b.y)) <= (a.y+(a.d)) || ((b.y-(b.h)) <= (a.y-(a.h)) && (a.y-(a.h)) <= (a.y+(a.h))))) &&
+    (( (a.z-(a.d))  <= (b.z-(b.d)) && (b.z-(b.d)) <= (a.z+(a.h)) || ((b.z-(b.d)) <= (a.z-(a.d)) && (a.z-(a.d)) <= (a.z+(a.d))))) 
     	)
     {
-		slog("true eh");
         return 1;
     }
 	

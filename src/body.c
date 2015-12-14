@@ -1,5 +1,6 @@
 #include "obj.h"
 #include "body.h"
+#include "vector.h"
 #include "simple_logger.h" // this may cause problems
 
 void body_reset(Body *body)
@@ -8,7 +9,33 @@ void body_reset(Body *body)
     body->_needsBackoff = 0;
     body->_done = 0;    
 }
+void set_body(Body *player, Vec3D position, Obj *obj, Vec3D rotation, Vec3D scale)
+{
+	player->position = position;
+	
+	player->rotation = rotation;
 
+	player->velocity.x = .1;
+	player->velocity.y = .1;
+	player->velocity.z = .2;
+	
+	player->obj = obj;
+
+	player->_airborne = 0;
+
+	player->bounds.x = position.x;// - (obj->size.x/2);
+	player->bounds.y = position.y;// - (obj->size.y/2);
+	player->bounds.z = position.z;// - (obj->size.z/2);
+	player->bounds.w = obj->size.x;
+	player->bounds.h = obj->size.y;
+	player->bounds.d = obj->size.z;
+
+	player->_needsBackoff = 0;
+	player->_stepOffVector.x = 0;
+	player->_stepOffVector.y = 0;
+	player->_stepOffVector.z = .1;
+	
+}
 void body_process(Body *body)
 {
     if (!body)return;
@@ -16,30 +43,9 @@ void body_process(Body *body)
     {
         vec3d_add(body->position,body->position,body->_stepOffVector);
 		//vec3d_add(body->bounds,body->bounds,body->_stepOffVector);
-    }
+		body->_needsBackoff = 0;
+	}
 }
 
-void set_body(Body *target, Vec3D pos, Obj *targetObj, Vec3D scale)
-{
-	target->position = pos;
-
-	target->bounds.x = pos.x;
-	target->bounds.y = pos.y;
-	target->bounds.z = pos.z;
-	target->bounds.w = targetObj->size.x*scale.x;
-	target->bounds.h = targetObj->size.y*scale.y;
-	target->bounds.d = targetObj->size.z*scale.z;
-	
-	target->_needsBackoff = 0;
-	target->used = 1;
-	target->_airborne = 1;
-}
-void set_body_size(Body *target, Vec3D size)
-{
-	//target->bounds.w = 100;
-	//target->bounds.h = 100;
-	//target->bounds.d = 100;
-	slog("width of target is: %d",target->bounds.w = size.x);
-}
 
 /*eol@eof*/
