@@ -33,12 +33,19 @@
 void set_camera(Vec3D position, Vec3D rotation);
 void set_camera_toplayer(Vec3D player, Vec3D cameraPos);
 void update_BB(Body *body);
-
+void update_stageBB(Body *body);
+//position update
 void update_BB(Body *body)
 {
-	body->bounds.x = body->position.x;
-	body->bounds.y = body->position.y;
-	body->bounds.z = body->position.z;
+	body->bounds.x = body->position.x - (body->obj->size.x/2);
+	body->bounds.y = body->position.y - (body->obj->size.y/2);
+	body->bounds.z = body->position.z - (body->obj->size.z/2);
+	
+}
+void update_stageBB(Body *body)
+{
+	//body->bounds.y = body->position.y - (body->obj->size.y);
+	//cube_set(body->bounds,1,1,1,1,1,1);
 }
 
 void touch_callback(void *data, void *context)
@@ -114,14 +121,16 @@ int main(int argc, char *argv[])
     char bGameLoopRunning = 1;
     Vec3D cameraPosition = {0,-10,15};
     Vec3D cameraRotation = {73,0,0};
-	Vec3D boxPosition = {0,3,10};
+	Vec3D boxPosition = {0,0,0};
 	
 	Vec3D pupPosition1 = {0,0,10};
 	Vec3D pupPosition2 = {0,10,10};
 	Vec3D pupPosition3 = {0,15,10};
 
     Vec3D boxRotation = {0,0,0};
-	Vec3D stageSize = {10,40,10};
+
+	Vec3D boxSize = {1,1,1};
+	Vec3D stageSize = {1,1,1};
 	Vec3D stagePosition = {0,0,0};
 	const Uint8 *state = SDL_GetKeyboardState(NULL);
 	int diag;
@@ -170,16 +179,16 @@ int main(int argc, char *argv[])
     obj = obj_load("models/cube.obj");
     texture = LoadSprite("models/cube_text.png",1024,1024);
 
-    bgobj = obj_load("models/cube.obj"); //obj_load("models/mountainvillage.obj");
+    bgobj = obj_load("models/level.obj"); 
     bgtext = LoadSprite("models/mountain_text.png",1024,1024);
     
 	obj2 = obj_load("models/cube.obj");
 	
-	set_body(&mainBody, boxPosition, obj, boxRotation, vec3d(0.5,0.5,0.5));
-	set_body(&stageBody,stagePosition,bgobj,boxRotation, vec3d(0.5,0.5,0.5));
-	set_body(&powerBody1,pupPosition1, obj2, boxRotation, vec3d(0.5,0.5,0.5));
-	set_body(&powerBody2,pupPosition2, obj2, boxRotation, vec3d(0.5,0.5,0.5));
-	set_body(&powerBody3,pupPosition3, obj2, boxRotation, vec3d(0.5,0.5,0.5));
+	set_body(&mainBody, boxPosition, obj, boxRotation, boxSize);
+	set_body(&stageBody,stagePosition,bgobj,boxRotation, stageSize);
+	set_body(&powerBody1,pupPosition1, obj, boxRotation, boxSize);
+	set_body(&powerBody2,pupPosition2, obj, boxRotation, boxSize);
+	set_body(&powerBody3,pupPosition3, obj, boxRotation, boxSize);
 	
 	diag = 0;
 	now = 0;
@@ -192,7 +201,7 @@ int main(int argc, char *argv[])
 		//entity_think_all();
 
 		update_BB(&mainBody);
-		update_BB(&stageBody);
+		update_stageBB(&stageBody);
 		update_BB(&powerBody1);
 		update_BB(&powerBody2);
 		update_BB(&powerBody3);
@@ -218,26 +227,26 @@ int main(int argc, char *argv[])
 			if(state[SDL_SCANCODE_W])
 			{
 				SET_FLAG(diag,MOVE_FORWARD);
-				vec3d_add(
+				/*vec3d_add(
                         cameraPosition,
                         cameraPosition,
                         vec3d(
                             -sin(cameraRotation.z * DEGTORAD),
                             cos(cameraRotation.z * DEGTORAD),
                             0
-                        ));
+                        ));*/
 			}
 			if(state[SDL_SCANCODE_S])
 			{
 				SET_FLAG(diag,MOVE_BACKWARDS);
-				vec3d_add(
+				/*vec3d_add(
                         cameraPosition,
                         cameraPosition,
                         vec3d(
                             sin(cameraRotation.z * DEGTORAD),
                             -cos(cameraRotation.z * DEGTORAD),
                             0
-                        ));
+                        ));*/
 			}
 			if(state[SDL_SCANCODE_A])
 			{
@@ -248,33 +257,25 @@ int main(int argc, char *argv[])
                             -cos(cameraRotation.z * DEGTORAD),
                             -sin(cameraRotation.z * DEGTORAD),
                             0
-                      ));*/
-				vec3d_add(
-                        cameraPosition,
-                        cameraPosition,
-                        vec3d(
-                            -cos(cameraRotation.z * DEGTORAD),
-                            -sin(cameraRotation.z * DEGTORAD),
-                            0
-                        ));
+                        ));*/
 				SET_FLAG(diag,MOVE_LEFT);
 			}
 			if(state[SDL_SCANCODE_D])
 			{
-				vec3d_add(
+				/*vec3d_add(
                         cameraPosition,
                         cameraPosition,
                         vec3d(
                             cos(cameraRotation.z * DEGTORAD),
                             sin(cameraRotation.z * DEGTORAD),
                             0
-                        ));
+                        ));*/
 				SET_FLAG(diag,MOVE_RIGHT);
 			}
 			if(state[SDL_SCANCODE_SPACE])
 			{
 				SET_FLAG(diag,MOVE_JUMP);
-				cameraPosition.z++;
+				//cameraPosition.z++;
 			}
 			if(state[SDL_SCANCODE_RIGHT])
 			{
@@ -411,23 +412,11 @@ int main(int argc, char *argv[])
 		}
 		if(mainBody._airborne)
 		{
-			for(i=0;i<4;i++)
-			{
-				vec3d_add(
-					mainBody.position,
-					mainBody.position,
-					vec3d(
-						0,
-						0,
-						mainBody.velocity.z*deltaTime
-					));
-				if(i == 3)
-				{
-					mainBody._airborne = 0;
-				}
-			}
+			slog("AIRBORNE");
+			
 		}else
 		{
+			slog("NOT AIRBORNE");
 			/*vec3d_sub(
 					mainBody.position,
 					mainBody.position,
@@ -437,12 +426,19 @@ int main(int argc, char *argv[])
 						mainBody.velocity.z
 					));*/
 		}
-		if(cube_cube_intersection(mainBody.bounds,stageBody.bounds))
+		if(cube_cube_intersection2(mainBody.bounds,stageBody.bounds))
+		{
+			mainBody._airborne = 0;
+			mainBody._needsBackoff = 1;
+			body_process(&mainBody);
+			slog("player in stage %d", time);	
+		}
+		/*if(cube_cube_intersection2(powerBody1.bounds,stageBody.bounds))
 		{
 			mainBody._needsBackoff = 1;
-			//body_process(&mainBody);
-			//slog("in");	
-		}
+			body_process(&powerBody1);
+			slog("in %d", time);	
+		}*/
 		//if(cube_cube_intersection(mainBody.bounds,powerBody1.bounds))
 		//{
 		//	//body_process(&mainBody);
@@ -460,23 +456,24 @@ int main(int argc, char *argv[])
         set_camera(
             cameraPosition,
             cameraRotation);
-	
 		
-        //obj_draw(          //stage ground
-        //    bgobj,
-        //    stagePosition,
-        //    vec3d(0,90,0),
-        //    stageSize, //scale
-        //    vec4d(1,1,1,1),
-        //    bgtext
-        //);
+		
+        obj_draw(          //stage ground
+			stageBody.obj,
+			stageBody.position,
+            vec3d(0,90,0),
+			stageBody.scale, //scale
+            vec4d(1,1,1,1),
+            bgtext
+        );
         drawBB(&mainBody);
-		//drawBB(&powerBody1);
+		drawBB(&stageBody);
+		drawBB(&powerBody1);
         obj_draw(          //player draw
-            obj,
+			mainBody.obj,
 			mainBody.position,
 			mainBody.rotation,
-			vec3d(1,1,1),
+			mainBody.scale,
             vec4d(1,1,1,1),
             texture
         );
@@ -489,23 +486,23 @@ int main(int argc, char *argv[])
 			    vec4d(1,1,1,1),
 			    texture
 			);
-			obj_draw(          //powerup2 draw
-			    obj2,
-				pupPosition2,
-			    vec3d(r++,0,0),
-				vec3d(1,1,1),
-			    vec4d(1,1,1,1),
-			    texture
-			);
+			//obj_draw(          //powerup2 draw
+			//    obj2,
+			//	pupPosition2,
+			//    vec3d(r++,0,0),
+			//	vec3d(1,1,1),
+			//    vec4d(1,1,1,1),
+			//    texture
+			//);
 		
-			obj_draw(          //powerup3 draw
-			    obj2,
-				pupPosition3,
-			    vec3d(90,0,r++),
-				vec3d(1,1,1),
-			    vec4d(1,1,1,1),
-			    texture
-			);
+			//obj_draw(          //powerup3 draw
+			//    obj2,
+			//	pupPosition3,
+			//    vec3d(90,0,r++),
+			//	vec3d(1,1,1),
+			//    vec4d(1,1,1,1),
+			//    texture
+			//);
 		
         if (r > 360)r -= 360;
         glPopMatrix();
@@ -514,7 +511,6 @@ int main(int argc, char *argv[])
     } 
     return 0;
 }
-
 void set_camera(Vec3D position, Vec3D rotation)
 {
     glRotatef(-rotation.x, 1.0f, 0.0f, 0.0f);

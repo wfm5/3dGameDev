@@ -15,6 +15,8 @@ void set_body(Body *player, Vec3D position, Obj *obj, Vec3D rotation, Vec3D scal
 	
 	player->rotation = rotation;
 
+	player->scale = scale;
+
 	player->velocity.x = .1;
 	player->velocity.y = .1;
 	player->velocity.z = .2;
@@ -23,18 +25,22 @@ void set_body(Body *player, Vec3D position, Obj *obj, Vec3D rotation, Vec3D scal
 
 	player->_airborne = 0;
 
-	player->bounds.x = position.x;// - (obj->size.x/2);
-	player->bounds.y = position.y;// - (obj->size.y/2);
-	player->bounds.z = position.z;// - (obj->size.z/2);
+	player->bounds.x =  - (obj->size.x/2);
+	player->bounds.y =  - (obj->size.y/2);
+	player->bounds.z =  - (obj->size.z/2);
 	player->bounds.w = obj->size.x;
 	player->bounds.h = obj->size.y;
 	player->bounds.d = obj->size.z;
+	
 
 	player->_needsBackoff = 0;
 	player->_stepOffVector.x = 0;
 	player->_stepOffVector.y = 0;
 	player->_stepOffVector.z = .1;
 	
+	player->bounds.w *= player->scale.x;
+	player->bounds.h *= player->scale.y;
+	player->bounds.d *= player->scale.z;
 }
 void body_process(Body *body)
 {

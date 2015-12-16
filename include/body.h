@@ -12,6 +12,7 @@ typedef struct
     Vec3D velocity;
 	Vec3D rotation;
     Cube bounds;
+	Vec3D scale;
 	Obj *obj;
     MglCallback touch;
     int  _needsBackoff;

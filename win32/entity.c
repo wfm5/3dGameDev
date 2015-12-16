@@ -147,18 +147,18 @@ void drawBB(Body *body)
 	
 	int i;
 	
-	float x = body->bounds.x;//+body->position.x;
+	float x = body->position.x + body->bounds.x;//+body->position.x;
 
-	float y = body->bounds.y;//+body->position.y;
+	float y = body->position.x + body->bounds.y;//+body->position.y;
 
-	float z = body->bounds.z;//+body->position.z;
+	float z = body->position.x + body->bounds.z;//+body->position.z;
 
 	float w = body->bounds.w;
 
 	float h = body->bounds.h;
 
 	float d = body->bounds.d;
-
+	
 	Vec3D verts[8] = 
 
 	{
@@ -307,7 +307,7 @@ void drawBB(Body *body)
 
     glDisable(GL_COLOR_MATERIAL);
 
-	slog(" bb (%f,%f,%f,%f,%f,%f)\n",x,y,z,body->bounds.w,body->bounds.h,body->bounds.d);
+	//slog(" bb (%f,%f,%f,%f,%f,%f)\n",x,y,z,body->bounds.w,body->bounds.h,body->bounds.d);
 
 	glPopMatrix();
 

@@ -44,6 +44,7 @@ typedef struct
     char   filename[512];
     
 	Vec3D size;
+	Vec3D center;
     Uint32 num_tris;
     Uint32 num_vertices;
     Uint32 num_texels;

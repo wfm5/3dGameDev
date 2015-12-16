@@ -381,6 +381,7 @@ Obj *obj_load(char *filename)
     }
     
     file = fopen(filename,"r");
+	sprintf(objFile->filename, "%s", filename);
     if (file == NULL)
     {
         slog("failed to open file %s",filename);
@@ -408,9 +409,14 @@ Obj *obj_load(char *filename)
 		if(objFile->vertex_array[i*3+2] >= max.z) max.z = objFile->vertex_array[i*3+2];
 	}
 	objFile->size.x = max.x - min.x;
+	objFile->center.x = (max.x + min.x)/2; 
+
 	objFile->size.y = max.y - min.y;
+	objFile->center.y = (max.y + min.y)/2;
+
 	objFile->size.z = max.z - min.z;
-	slog("width: %d", objFile->size.x);
+	objFile->center.z = (max.z + min.z)/2;
+
     fclose(file);
     
     return objFile;
