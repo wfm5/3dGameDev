@@ -7,7 +7,13 @@
 
 typedef struct
 {
+	int inuse;
 	int _airborne;
+	int awake;
+	int hasGravity;
+	int hasPower;
+	float powertime;
+	float jumptime;
     Vec3D position;
     Vec3D velocity;
 	Vec3D rotation;

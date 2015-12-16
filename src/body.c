@@ -11,6 +11,11 @@ void body_reset(Body *body)
 }
 void set_body(Body *player, Vec3D position, Obj *obj, Vec3D rotation, Vec3D scale)
 {
+	player->inuse = 1;
+
+	player->awake = 0;
+	player->hasPower = 0;
+
 	player->position = position;
 	
 	player->rotation = rotation;
@@ -19,11 +24,15 @@ void set_body(Body *player, Vec3D position, Obj *obj, Vec3D rotation, Vec3D scal
 
 	player->velocity.x = .1;
 	player->velocity.y = .1;
-	player->velocity.z = .2;
+	player->velocity.z = .1;
 	
+	player->jumptime = 30;
+	player->powertime = 40;
+
 	player->obj = obj;
 
 	player->_airborne = 0;
+	player->hasGravity = 0;
 
 	player->bounds.x =  - (obj->size.x/2);
 	player->bounds.y =  - (obj->size.y/2);

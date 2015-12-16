@@ -40,7 +40,14 @@ void update_BB(Body *body)
 	body->bounds.x = body->position.x - (body->obj->size.x/2);
 	body->bounds.y = body->position.y - (body->obj->size.y/2);
 	body->bounds.z = body->position.z - (body->obj->size.z/2);
-	
+}
+void update_powerBB(Body *body, Vec3D vector)
+{
+	body->bounds.x = body->position.x - (body->obj->size.x/2);
+	body->bounds.y = body->position.y - (body->obj->size.y/2);
+	body->bounds.z = body->position.z - (body->obj->size.z/2);
+
+	vec3d_cpy(body->position,vector);
 }
 void update_stageBB(Body *body)
 {
@@ -123,7 +130,7 @@ int main(int argc, char *argv[])
     Vec3D cameraRotation = {73,0,0};
 	Vec3D boxPosition = {0,0,0};
 	
-	Vec3D pupPosition1 = {0,0,10};
+	Vec3D pupPosition1 = {0,10,10};
 	Vec3D pupPosition2 = {0,10,10};
 	Vec3D pupPosition3 = {0,15,10};
 
@@ -186,9 +193,9 @@ int main(int argc, char *argv[])
 	
 	set_body(&mainBody, boxPosition, obj, boxRotation, boxSize);
 	set_body(&stageBody,stagePosition,bgobj,boxRotation, stageSize);
-	set_body(&powerBody1,pupPosition1, obj, boxRotation, boxSize);
-	set_body(&powerBody2,pupPosition2, obj, boxRotation, boxSize);
-	set_body(&powerBody3,pupPosition3, obj, boxRotation, boxSize);
+	set_body(&powerBody1,boxPosition, obj, boxRotation, boxSize);
+	set_body(&powerBody2,boxPosition, obj, boxRotation, boxSize);
+	set_body(&powerBody3,boxPosition, obj, boxRotation, boxSize);
 	
 	diag = 0;
 	now = 0;
@@ -202,7 +209,7 @@ int main(int argc, char *argv[])
 
 		update_BB(&mainBody);
 		update_stageBB(&stageBody);
-		update_BB(&powerBody1);
+		update_powerBB(&powerBody1, pupPosition1);
 		update_BB(&powerBody2);
 		update_BB(&powerBody3);
 		
@@ -223,7 +230,10 @@ int main(int argc, char *argv[])
             {
                 bGameLoopRunning = 0;
             }
-
+			if(state[SDL_SCANCODE_1])
+			{
+				mainBody.awake = 1;
+			}
 			if(state[SDL_SCANCODE_W])
 			{
 				SET_FLAG(diag,MOVE_FORWARD);
@@ -299,6 +309,10 @@ int main(int argc, char *argv[])
 			{
 				mainBody.position.z--;
 				//cameraPosition.z--;
+			}
+			if(state[SDL_SCANCODE_SPACE])
+			{
+				SET_FLAG(diag,MOVE_JUMP);
 			}
 
 			if(diag==MOVE_FORWARD)
@@ -407,50 +421,92 @@ int main(int argc, char *argv[])
 				}
 			else if(diag==(MOVE_JUMP))
 			{
-				mainBody._airborne = 1;
+ 				mainBody._airborne = 1;
 			}
 		}
-		if(mainBody._airborne)
+		//Some checks 1.power ups
+		if(mainBody.hasPower && mainBody.awake)
 		{
-			slog("AIRBORNE");
-			
+			mainBody.powertime -= deltaTime;
+			slog("%f", mainBody.powertime);
+			if(mainBody.powertime <= 0)
+			{
+				mainBody.hasPower = 0;
+				vec3d_set(mainBody.velocity, 0.1, 0.1, 0.1);
+			}
 		}else
 		{
-			slog("NOT AIRBORNE");
-			/*vec3d_sub(
-					mainBody.position,
-					mainBody.position,
-					vec3d(
-						0,
-						0,
-						mainBody.velocity.z
-					));*/
+			mainBody.powertime = 4000;
 		}
-		if(cube_cube_intersection2(mainBody.bounds,stageBody.bounds))
+		//collisions
+		if(mainBody._airborne)
 		{
-			mainBody._airborne = 0;
-			mainBody._needsBackoff = 1;
-			body_process(&mainBody);
-			slog("player in stage %d", time);	
+			if(mainBody.jumptime >0)
+			{
+				vec3d_add(
+						mainBody.position,
+						mainBody.position,
+						vec3d(
+							0,
+							0,
+							mainBody.velocity.z
+							));
+				mainBody.jumptime -= deltaTime;
+			}
+			else if(mainBody.jumptime <= 0)
+			{
+				mainBody.hasGravity = 1;
+			}
+			if(mainBody.hasGravity && mainBody._airborne)
+				{
+					if(mainBody.jumptime <= 0)
+					{
+						vec3d_sub(
+								mainBody.position,
+								mainBody.position,
+								vec3d(
+									0,
+									0,
+									mainBody.velocity.z
+									));
+					}
+				}
 		}
-		/*if(cube_cube_intersection2(powerBody1.bounds,stageBody.bounds))
+		if(mainBody.awake)
+		{
+			if(cube_cube_intersection2(mainBody.bounds,stageBody.bounds))
+			{
+				REMOVE_FLAG(diag,MOVE_JUMP);
+				mainBody.hasGravity = 0;
+				mainBody._airborne = 0;
+				mainBody.jumptime = 40;
+				mainBody._needsBackoff = 1;
+				body_process(&mainBody);
+				//slog("player in stage %d", time);	
+			}
+								/*if(cube_cube_intersection2(powerBody1.bounds,stageBody.bounds))
 		{
 			mainBody._needsBackoff = 1;
 			body_process(&powerBody1);
-			slog("in %d", time);	
+				
 		}*/
-		//if(cube_cube_intersection(mainBody.bounds,powerBody1.bounds))
-		//{
-		//	//body_process(&mainBody);
-		//}
-		/*if(point_cube_intersection(mainBody.position,powerBody1.position,powerBody1.obj->size))
-		{
-			slog("caughht \n");
-		}*/
-        graphics3d_frame_begin();
-
+			if(cube_cube_intersection2(mainBody.bounds,powerBody1.bounds))
+			{
+				//body_process(&mainBody);
+				if(powerBody1.inuse)
+				{
+					slog("mystical power of Speed");
+					mainBody.hasPower = 1;
+					mainBody.powertime = 4000;
+					mainBody.velocity.x *= 3;
+					mainBody.velocity.y *= 3;
+				}
+				powerBody1.inuse = 0;
+			}
+		}
+       
+		graphics3d_frame_begin();
 	   //begin drawing
-       // entity_draw_all();
 		glPushMatrix();
 	
         set_camera(
@@ -458,17 +514,19 @@ int main(int argc, char *argv[])
             cameraRotation);
 		
 		
-        obj_draw(          //stage ground
-			stageBody.obj,
-			stageBody.position,
-            vec3d(0,90,0),
-			stageBody.scale, //scale
-            vec4d(1,1,1,1),
-            bgtext
-        );
-        drawBB(&mainBody);
-		drawBB(&stageBody);
+   //     obj_draw(          //stage ground
+			//stageBody.obj,
+			//stageBody.position,
+   //         vec3d(0,90,0),
+			//stageBody.scale, //scale
+   //         vec4d(1,1,1,1),
+   //         bgtext
+   //     );
+        
+		//drawBB(&mainBody);
+		//drawBB(&stageBody);
 		drawBB(&powerBody1);
+
         obj_draw(          //player draw
 			mainBody.obj,
 			mainBody.position,
@@ -477,15 +535,16 @@ int main(int argc, char *argv[])
             vec4d(1,1,1,1),
             texture
         );
-	
+		if(powerBody1.inuse){
 			obj_draw(          //powerup1 draw
-			    obj2,
-				pupPosition1,
+				powerBody1.obj,
+				powerBody1.position,
 			    vec3d(90,r++,0),
 				vec3d(1,1,1),
 			    vec4d(1,1,1,1),
 			    texture
 			);
+		}
 			//obj_draw(          //powerup2 draw
 			//    obj2,
 			//	pupPosition2,
