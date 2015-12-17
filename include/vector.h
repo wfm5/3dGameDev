@@ -21,6 +21,7 @@ typedef struct
 #define MOVE_LEFT 4
 #define MOVE_RIGHT 8
 #define MOVE_JUMP 16
+#define DRAW_BB 1
 
 Vec2D vec2d(float x,float y);
 Vec3D vec3d(float x,float y, float z);

@@ -12,6 +12,7 @@ typedef struct
 	int awake;
 	int hasGravity;
 	int hasPower;
+	int moved;
 	float powertime;
 	float jumptime;
     Vec3D position;

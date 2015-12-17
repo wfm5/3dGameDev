@@ -26,18 +26,20 @@
 #include "sprite.h"
 #include "body.h"
 #include "vector.h"
+#include "ui.h"
 #include "entity.h"
 #include <math.h>
 #include <stdio.h>
 
+
 void set_camera(Vec3D position, Vec3D rotation);
-void set_camera_toplayer(Vec3D player, Vec3D cameraPos);
+Vec3D get_camera_pos(Vec3D camera, Body *body);
 void update_BB(Body *body);
 void update_stageBB(Body *body);
 //position update
 void update_BB(Body *body)
 {
-	body->bounds.x = body->position.x - (body->obj->size.x/2);
+	body->bounds.x = body->position.x - (body->obj->size.x/2); //keeps in place
 	body->bounds.y = body->position.y - (body->obj->size.y/2);
 	body->bounds.z = body->position.z - (body->obj->size.z/2);
 }
@@ -51,8 +53,7 @@ void update_powerBB(Body *body, Vec3D vector)
 }
 void update_stageBB(Body *body)
 {
-	//body->bounds.y = body->position.y - (body->obj->size.y);
-	//cube_set(body->bounds,1,1,1,1,1,1);
+	
 }
 
 void touch_callback(void *data, void *context)
@@ -123,7 +124,6 @@ int main(int argc, char *argv[])
 {
     GLuint vao;
     float r = 0;
-	int i;
     GLuint triangleBufferObject;
     char bGameLoopRunning = 1;
     Vec3D cameraPosition = {0,-10,15};
@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
 	Vec3D boxPosition = {0,0,0};
 	
 	Vec3D pupPosition1 = {0,10,10};
-	Vec3D pupPosition2 = {0,10,10};
+	Vec3D pupPosition2 = {0,80,10};
 	Vec3D pupPosition3 = {0,15,10};
 
     Vec3D boxRotation = {0,0,0};
@@ -151,6 +151,10 @@ int main(int argc, char *argv[])
 	Body powerBody2;
 	Body powerBody3;
 	Body stageBody;
+	Body stageBody2;
+
+	//UI *powerUpInfo;
+	SDL_Surface *text;
 
 	SDL_Event e;
     Obj *obj,*bgobj, *obj2;
@@ -166,7 +170,7 @@ int main(int argc, char *argv[])
     }; //we love you vertices!
     
     init_logger("gametest3d.log");
-    if (graphics3d_init(1024,768,1,"gametest3d",33) != 0)
+    if (graphics3d_init(1024,768,1,"The Mole's Adventure",33) != 0)
     {
         return -1;
     }
@@ -174,6 +178,7 @@ int main(int argc, char *argv[])
     model_init();
     obj_init();
     entity_init(255);
+	//load_ui(&powerUpInfo, 28);
 
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao); //make our vertex array object, we need it to restore state we set after binding it. Re-binding reloads the state associated with it.
@@ -188,15 +193,14 @@ int main(int argc, char *argv[])
 
     bgobj = obj_load("models/level.obj"); 
     bgtext = LoadSprite("models/mountain_text.png",1024,1024);
-    
-	obj2 = obj_load("models/cube.obj");
 	
 	set_body(&mainBody, boxPosition, obj, boxRotation, boxSize);
 	set_body(&stageBody,stagePosition,bgobj,boxRotation, stageSize);
+	set_body(&stageBody2,stagePosition,bgobj,boxRotation, stageSize);
 	set_body(&powerBody1,boxPosition, obj, boxRotation, boxSize);
 	set_body(&powerBody2,boxPosition, obj, boxRotation, boxSize);
 	set_body(&powerBody3,boxPosition, obj, boxRotation, boxSize);
-	
+
 	diag = 0;
 	now = 0;
 	last = 0;
@@ -208,11 +212,10 @@ int main(int argc, char *argv[])
 		//entity_think_all();
 
 		update_BB(&mainBody);
-		update_stageBB(&stageBody);
+		update_powerBB(&stageBody2, vec3d(0,100,0));
 		update_powerBB(&powerBody1, pupPosition1);
-		update_BB(&powerBody2);
+		update_powerBB(&powerBody2, pupPosition2);
 		update_BB(&powerBody3);
-		
 		now = SDL_GetTicks();
 		time = now/1000;
 		if(now>last+1000)
@@ -232,8 +235,11 @@ int main(int argc, char *argv[])
             }
 			if(state[SDL_SCANCODE_1])
 			{
-				mainBody.awake = 1;
+				if(time > 1)
+					mainBody.awake = 1;
+				slog("grab the rotating cube on the next platform.");
 			}
+			if(mainBody.awake){
 			if(state[SDL_SCANCODE_W])
 			{
 				SET_FLAG(diag,MOVE_FORWARD);
@@ -307,7 +313,7 @@ int main(int argc, char *argv[])
 			}
 			if(state[SDL_SCANCODE_Z])
 			{
-				mainBody.position.z--;
+				//mainBody.position.z--;
 				//cameraPosition.z--;
 			}
 			if(state[SDL_SCANCODE_SPACE])
@@ -423,6 +429,7 @@ int main(int argc, char *argv[])
 			{
  				mainBody._airborne = 1;
 			}
+			}
 		}
 		//Some checks 1.power ups
 		if(mainBody.hasPower && mainBody.awake)
@@ -436,9 +443,9 @@ int main(int argc, char *argv[])
 			}
 		}else
 		{
-			mainBody.powertime = 4000;
+			mainBody.powertime = 2000;
 		}
-		//collisions
+		//gravity after jump
 		if(mainBody._airborne)
 		{
 			if(mainBody.jumptime >0)
@@ -472,24 +479,35 @@ int main(int argc, char *argv[])
 					}
 				}
 		}
+		//gravity all time
+		if(mainBody.hasGravity && !mainBody._airborne && mainBody.awake)
+		{
+				vec3d_sub(
+						mainBody.position,
+						mainBody.position,
+						vec3d(
+							0,
+							0,
+							mainBody.velocity.z
+							));
+		}
 		if(mainBody.awake)
 		{
-			if(cube_cube_intersection2(mainBody.bounds,stageBody.bounds))
+			if(cube_cube_intersection2(mainBody.bounds,stageBody.bounds) || cube_cube_intersection2(mainBody.bounds,stageBody2.bounds))
 			{
+				
 				REMOVE_FLAG(diag,MOVE_JUMP);
-				mainBody.hasGravity = 0;
 				mainBody._airborne = 0;
-				mainBody.jumptime = 40;
+				mainBody.jumptime = 55;
 				mainBody._needsBackoff = 1;
 				body_process(&mainBody);
 				//slog("player in stage %d", time);	
-			}
-								/*if(cube_cube_intersection2(powerBody1.bounds,stageBody.bounds))
-		{
-			mainBody._needsBackoff = 1;
-			body_process(&powerBody1);
 				
-		}*/
+			}else
+			{
+				mainBody.hasGravity = 1;
+			}
+		
 			if(cube_cube_intersection2(mainBody.bounds,powerBody1.bounds))
 			{
 				//body_process(&mainBody);
@@ -497,35 +515,45 @@ int main(int argc, char *argv[])
 				{
 					slog("mystical power of Speed");
 					mainBody.hasPower = 1;
-					mainBody.powertime = 4000;
+					mainBody.powertime = 2000;
 					mainBody.velocity.x *= 3;
 					mainBody.velocity.y *= 3;
 				}
 				powerBody1.inuse = 0;
+			}if(cube_cube_intersection2(mainBody.bounds,powerBody2.bounds))
+			{
+				//body_process(&mainBody);
+				bGameLoopRunning = 0;
 			}
 		}
-       
 		graphics3d_frame_begin();
 	   //begin drawing
 		glPushMatrix();
-	
+		cameraPosition= get_camera_pos(
+			cameraPosition,
+			&mainBody);
         set_camera(
             cameraPosition,
             cameraRotation);
+
+		draw_ui(cameraPosition);
+        obj_draw(          //stage ground
+			stageBody.obj,
+			stageBody.position,
+            vec3d(0,90,0),
+			stageBody.scale, //scale
+            vec4d(1,1,1,1),
+            bgtext
+        );
+		obj_draw(          //stage2 ground
+			stageBody2.obj,
+			stageBody2.position,
+            vec3d(0,90,0),
+			stageBody.scale, //scale
+            vec4d(1,1,1,1),
+            bgtext
+        );
 		
-		
-   //     obj_draw(          //stage ground
-			//stageBody.obj,
-			//stageBody.position,
-   //         vec3d(0,90,0),
-			//stageBody.scale, //scale
-   //         vec4d(1,1,1,1),
-   //         bgtext
-   //     );
-        
-		//drawBB(&mainBody);
-		//drawBB(&stageBody);
-		drawBB(&powerBody1);
 
         obj_draw(          //player draw
 			mainBody.obj,
@@ -545,15 +573,17 @@ int main(int argc, char *argv[])
 			    texture
 			);
 		}
-			//obj_draw(          //powerup2 draw
-			//    obj2,
-			//	pupPosition2,
-			//    vec3d(r++,0,0),
-			//	vec3d(1,1,1),
-			//    vec4d(1,1,1,1),
-			//    texture
-			//);
-		
+		if(bGameLoopRunning)
+		{
+			obj_draw(          //flag post
+				powerBody2.obj,
+				powerBody2.position,
+			    vec3d(r++,0,0),
+				vec3d(1,1,1),
+			    vec4d(1,1,1,1),
+			    texture
+			);
+		}
 			//obj_draw(          //powerup3 draw
 			//    obj2,
 			//	pupPosition3,
@@ -578,6 +608,13 @@ void set_camera(Vec3D position, Vec3D rotation)
     glTranslatef(-position.x,
                  -position.y,
                  -position.z);
+}
+Vec3D get_camera_pos(Vec3D camera, Body *body)
+{
+	camera.x = body->position.x + 0;
+	camera.y = body->position.y + -10;
+	camera.z = body->position.z + 5;
+		return camera;
 }
 
 /*eol@eof*/

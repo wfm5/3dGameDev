@@ -2,6 +2,7 @@
 #include "simple_logger.h"
 #include "shader.h"
 #include <GL/glu.h>
+#include <SDL_ttf.h>
 
 
 static SDL_GLContext __graphics3d_gl_context;
@@ -29,6 +30,8 @@ int graphics3d_init(int sw,int sh,int fullscreen,const char *project,Uint32 fram
         return -1;
     }
     atexit(SDL_Quit);
+	TTF_Init();
+	atexit(TTF_Quit);
     __graphics3d_frame_delay = frameDelay;
     
     __graphics3d_window = SDL_CreateWindow(project?project:"gametest3d",
@@ -92,8 +95,8 @@ int graphics3d_init(int sw,int sh,int fullscreen,const char *project,Uint32 fram
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
     /*Enables alpha testing*/
-/*    glAlphaFunc(GL_GREATER,0);
-    glEnable(GL_ALPHA_TEST);*/
+    glAlphaFunc(GL_GREATER,0);
+    glEnable(GL_ALPHA_TEST);
     
     graphics3d_setup_default_light();
     atexit(graphics3d_close);

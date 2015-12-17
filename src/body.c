@@ -45,11 +45,13 @@ void set_body(Body *player, Vec3D position, Obj *obj, Vec3D rotation, Vec3D scal
 	player->_needsBackoff = 0;
 	player->_stepOffVector.x = 0;
 	player->_stepOffVector.y = 0;
-	player->_stepOffVector.z = .1;
+	player->_stepOffVector.z = .2;
 	
 	player->bounds.w *= player->scale.x;
 	player->bounds.h *= player->scale.y;
 	player->bounds.d *= player->scale.z;
+
+	player->moved = 0;
 }
 void body_process(Body *body)
 {

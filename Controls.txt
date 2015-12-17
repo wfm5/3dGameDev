@@ -1,0 +1,5 @@
+WASD to move around
+SPACE to jump
+1st Rotating square is a speed buff
+2nd rotating square is the goal post
+When the game starts you will be in the ground. Press 1 to start.
